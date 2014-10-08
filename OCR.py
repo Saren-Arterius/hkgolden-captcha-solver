@@ -25,19 +25,19 @@ class OCRStorage(object):
 
 class OCR(object):
     chars_db = OCRStorage.load_db()
-    grid_size = 30
+    GRID_SIZE = 30
 
     def __init__(self, char_grid):
-        assert len(char_grid) == OCR.grid_size
+        assert len(char_grid) == OCR.GRID_SIZE
         for row in char_grid:
-            assert len(row) == OCR.grid_size
+            assert len(row) == OCR.GRID_SIZE
         self.char_grid = char_grid
 
     def train_char(self, char):
         assert len(char) == 1 and findall("[A-Z0-9]", char)
         if char in OCR.chars_db:
-            for x in range(OCR.grid_size):
-                for y in range(OCR.grid_size):
+            for x in range(OCR.GRID_SIZE):
+                for y in range(OCR.GRID_SIZE):
                     OCR.chars_db[char][y][x] += self.char_grid[y][x]
         else:
             OCR.chars_db[char] = self.char_grid
@@ -48,8 +48,8 @@ class OCR(object):
         for char, grid in OCR.chars_db.items():
             current_value = 0
             value_total = 0
-            for x in range(OCR.grid_size):
-                for y in range(OCR.grid_size):
+            for x in range(OCR.GRID_SIZE):
+                for y in range(OCR.GRID_SIZE):
                     value_total += grid[y][x]
                     if self.char_grid[y][x] == 1 and grid[y][x] >= 1:
                         current_value += grid[y][x]

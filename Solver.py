@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from enum import Enum
-from time import time
 
 from PIL import Image
 
@@ -12,8 +11,9 @@ class Solver(object):
         assert isinstance(captcha, Image.Image)
         self.captcha = captcha.convert("L")
         self.remove_bad_colors()
-        self.remove_lonely_pixels()
+        self.remove_lonely_pixels(16)
         self.fill_holes()
+        self.cut_chars(3)
         self.char_areas = self.get_char_areas()
         self.captcha.show()
 
@@ -21,12 +21,25 @@ class Solver(object):
         for i, char in enumerate(chars):
             OCR(self.to_numberic_grid(i)).train_char(char)
 
-
     def get_result(self):
-        chars = []
-        for i in range(4):
-            chars.append(OCR(self.to_numberic_grid(i)).match_char())
-        return "".join(chars)
+        return "".join([OCR(self.to_numberic_grid(i)).match_char() for i in range(4)])
+
+    def cut_chars(self, threshold):
+        continuous_columns = []
+        for x in range(self.captcha.size[0]):
+            in_black = False
+            for y in range(self.captcha.size[1]):
+                if self.captcha.getpixel((x, y)) == Color.BLACK.value:
+                    if not in_black:
+                        in_black = True
+                        continuous_columns.append([])
+                    continuous_columns[len(continuous_columns) - 1].append((x, y))
+                else:
+                    in_black = False
+        for continuous_column in continuous_columns:
+            if len(continuous_column) < threshold:
+                for xy in continuous_column:
+                    self.captcha.putpixel(xy, Color.WHITE.value)
 
     def get_char_areas(self):
         areas = []
@@ -50,15 +63,13 @@ class Solver(object):
                 areas.append(((min_x, min_y), (max_x, max_y)))
         return areas
 
-
     def to_numberic_grid(self, char_index):
-        grid = [[0] * OCR.grid_size for i in range(OCR.grid_size)]
+        grid = [[0] * OCR.GRID_SIZE for i in range(OCR.GRID_SIZE)]
         for x in range(self.char_areas[char_index][0][0], self.char_areas[char_index][1][0] + 1):
             for y in range(self.char_areas[char_index][0][1], self.char_areas[char_index][1][1] + 1):
                 if self.captcha.getpixel((x, y)) == Color.BLACK.value:
                     grid[y - self.char_areas[char_index][0][1]][x - self.char_areas[char_index][0][0]] += 1
         return grid
-
 
     def remove_bad_colors(self):
         for x in range(self.captcha.size[0]):
@@ -68,7 +79,7 @@ class Solver(object):
                 else:
                     self.captcha.putpixel((x, y), Color.WHITE.value)
 
-    def remove_lonely_pixels(self):
+    def remove_lonely_pixels(self, threshold):
         searched = []
         for x in range(self.captcha.size[0]):
             for y in range(self.captcha.size[1]):
@@ -77,7 +88,7 @@ class Solver(object):
                 result = self.recursively_find_near_pixels([(x, y)], Color.BLACK.value, True, 0)
                 for xy in result:
                     searched.append(xy)
-                    if len(result) < 16:
+                    if len(result) < threshold:
                         self.captcha.putpixel(xy, Color.WHITE.value)
 
     def fill_holes(self):
