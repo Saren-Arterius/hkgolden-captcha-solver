@@ -7,19 +7,22 @@ script_path = dirname(realpath(__file__))
 
 
 class OCRStorage(object):
+    GRID_SIZE = 30
+
     @staticmethod
     def load_db():
         try:
-            return loads(open(join(script_path, "chars_db.json")).read())
+            return loads(open(join(script_path, "chars-db.json")).read())
         except FileNotFoundError:
-            chars = {}
-            with open(join(script_path, "chars_db.json"), "w+") as db_file:
+            chars = {"-": [[0] * OCRStorage.GRID_SIZE for i in range(OCRStorage.GRID_SIZE)]}
+            chars["-"][0][0] = 1
+            with open(join(script_path, "chars-db.json"), "w+") as db_file:
                 db_file.write(dumps(chars))
             return chars
 
     @staticmethod
     def save_db(db):
-        with open(join(script_path, "chars_db.json"), "w+") as db_file:
+        with open(join(script_path, "chars-db.json"), "w+") as db_file:
             db_file.write(dumps(db))
 
 
@@ -54,7 +57,7 @@ class OCR(object):
                     if self.char_grid[y][x] == 1 and grid[y][x] >= 1:
                         current_value += grid[y][x]
                     elif self.char_grid[y][x] == 1 and grid[y][x] == 0:
-                        current_value *= 0.98
+                        current_value *= 0.975
                     else:
                         current_value -= grid[y][x]
             matches[char] = current_value / value_total

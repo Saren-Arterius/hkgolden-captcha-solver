@@ -7,22 +7,22 @@ from OCR import OCR
 
 
 class Solver(object):
-    def __init__(self, captcha):
+    def __init__(self, captcha, chars_len):
         assert isinstance(captcha, Image.Image)
+        self.chars_len = chars_len
         self.captcha = captcha.convert("L")
         self.remove_bad_colors()
         self.remove_lonely_pixels(16)
         self.fill_holes()
-        self.cut_chars(3)
+        self.cut_chars(2)
         self.char_areas = self.get_char_areas()
-        self.captcha.show()
 
     def train(self, chars):
         for i, char in enumerate(chars):
             OCR(self.to_numberic_grid(i)).train_char(char)
 
     def get_result(self):
-        return "".join([OCR(self.to_numberic_grid(i)).match_char() for i in range(4)])
+        return "".join([OCR(self.to_numberic_grid(i)).match_char() for i in range(self.chars_len)])
 
     def cut_chars(self, threshold):
         continuous_columns = []
